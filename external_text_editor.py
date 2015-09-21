@@ -61,7 +61,7 @@ CONFIG_PATH = os.path.join(bpy.utils.user_resource('CONFIG'),
 def save_settings(self, context):
     #print("external_text_editor: save settings {}".format(CONFIG_PATH))
     with open(CONFIG_PATH, mode="w", encoding="UTF-8") as f:
-        for prop in ("command", "arguments", "wait", "interval"):
+        for prop in ("interval", "launch", "command", "arguments", "wait"):
             val = getattr(context.window_manager.external_text_editor, prop)
             f.write("bpy.context.window_manager.external_text_editor['{}']"
                     " = {!r}\n".format(prop, val))
@@ -78,6 +78,20 @@ def load_settings(arg=None):
 
 
 class ExternalTextEditor(bpy.types.PropertyGroup):
+
+    interval = bpy.props.FloatProperty(
+        name="Interval",
+        description="Time interval to watch if the file has been changed on disk",
+        min=0.1,
+        max=10.0,
+        default=1.0,
+        update = save_settings)
+
+    launch = bpy.props.BoolProperty(
+        name="Launch External Editor",
+        description="Automatically launch external editor when starting auto-reload",
+        default=True,
+        update = save_settings)
 
     command = bpy.props.StringProperty(
         subtype="FILE_PATH",
@@ -96,14 +110,6 @@ class ExternalTextEditor(bpy.types.PropertyGroup):
         name="Wait for Return",
         description="Stop automatic reload when the external text editor terminates",
         default=True,
-        update = save_settings)
-
-    interval = bpy.props.FloatProperty(
-        name="Interval",
-        description="Time interval to watch if the file has been changed on disk",
-        min=0.1,
-        max=10.0,
-        default=1.0,
         update = save_settings)
 
 
@@ -178,14 +184,16 @@ class TEXT_PT_external_text_editor(bpy.types.Panel):
             row.operator("text.external_edit_start", text="Start")
             row.operator("text.external_edit_stop", text="Stop")
             col.prop(context.window_manager.external_text_editor, "interval")
+            col.prop(context.window_manager.external_text_editor, "launch")
 
-            col = layout.column(align=True)
-            col.label(text="External Editor Settings:")
-            col.menu("external_text_editor.presets",
-                     text=TEXT_MT_external_text_editor_presets.bl_label)
-            col.prop(context.window_manager.external_text_editor, "command")
-            col.prop(context.window_manager.external_text_editor, "arguments")
-            col.prop(context.window_manager.external_text_editor, "wait")
+            if context.window_manager.external_text_editor.launch:
+                col = layout.column(align=True)
+                col.label(text="External Editor Settings:")
+                col.menu("external_text_editor.presets",
+                         text=TEXT_MT_external_text_editor_presets.bl_label)
+                col.prop(context.window_manager.external_text_editor, "command")
+                col.prop(context.window_manager.external_text_editor, "arguments")
+                col.prop(context.window_manager.external_text_editor, "wait")
 
 
 class TEXT_MT_external_text_editor(bpy.types.Menu):
@@ -205,7 +213,7 @@ def TEXT_MT_text_external_text_editor(self, context):
 # main part
 class ExternalEditorManager():
 
-    def __init__(self, text, command, options):
+    def __init__(self, text, launch, command, options):
         self.text = text
         self.internal = not text.filepath
 
@@ -219,12 +227,15 @@ class ExternalEditorManager():
             self.filename = text.filepath
 
         self.mtime = os.path.getmtime(self.filename)
-        self.args = [command]
-        self.args.extend(shlex.split(options))
-        self.args.append(self.filename)
+        self.proc = None
 
-        print("starting external text editor...")
-        self.proc = subprocess.Popen(self.args)
+        if launch:
+            args = [command]
+            args.extend(shlex.split(options))
+            args.append(self.filename)
+
+            print("starting external text editor...")
+            self.proc = subprocess.Popen(args)
 
     def __del__(self):
         self.terminate()
@@ -306,8 +317,7 @@ class TEXT_OT_external_text_editor(bpy.types.Operator):
 
 
 class TEXT_OT_external_text_editor_start(bpy.types.Operator):
-    """Save current text to disk and edit it with external text editor \
-(the text will be reloaded automatically when changed on disk)"""
+    """Save current text to disk and start automatic reload"""
     bl_idname = "text.external_edit_start"
     bl_label = "Edit Text with External Editor"
 
@@ -319,17 +329,24 @@ class TEXT_OT_external_text_editor_start(bpy.types.Operator):
         self.text = context.edit_text
         self.subproc_running = False
 
+        if not (self.text.filepath or
+                context.window_manager.external_text_editor.launch):
+            self.report({'ERROR'}, "Turn \"Launch External Editor\" on"
+                        " if you want to edit internal texts")
+            return {'CANCELLED'}
+
         sync_text(context, self.text)
 
         try:
             self.editor = ExternalEditorManager(
                 self.text,
+                context.window_manager.external_text_editor.launch,
                 context.window_manager.external_text_editor.command,
                 context.window_manager.external_text_editor.arguments)
         except FileNotFoundError as err:
             self.report({'ERROR'}, "{}".format(err))
             return {'CANCELLED'}
-        self.subproc_running = True
+        self.subproc_running = self.editor.is_alive()
 
         self.timer = context.window_manager.event_timer_add(
             context.window_manager.external_text_editor.interval,
@@ -385,8 +402,9 @@ class TEXT_OT_external_text_editor_start(bpy.types.Operator):
 
 
 class TEXT_OT_external_text_editor_stop(bpy.types.Operator):
-    """Stop automatic reload and delete temporary file created for internal text \
-(it would be better to terminate the external editor before doing this)"""
+    """Stop automatic reload and delete temporary file created for \
+internal text (it would be better to terminate the auto-launched external \
+editor before doing this)"""
     bl_idname = "text.external_edit_stop"
     bl_label = "Stop External Text Edit"
 
