@@ -276,6 +276,34 @@ def ignore_conflict(context, text):
         bpy.ops.text.resolve_conflict(
             {"edit_text":text, "window":context.window}, resolution='IGNORE')
 
+def tag_redraw(context):
+    for a in context.screen.areas:
+        if a.type == 'TEXT_EDITOR':
+            for r in a.regions:
+                if r.type == 'UI':
+                    r.tag_redraw()
+
+
+class TEXT_OT_external_text_editor(bpy.types.Operator):
+    """Start/stop external text edit"""
+    bl_idname = "text.external_edit"
+    bl_label = "Edit Text with External Editor"
+
+    action = bpy.props.EnumProperty(
+        items=[('START', "Start", "Start external edit"),
+               ('STOP',  "Stop",  "Stop external edit"),
+               ('TOGGLE', "Toggle", "Toggle external edit")],
+        name="Action",
+        description="Specify 'Start' or 'Stop' if necessary to force",
+        default='TOGGLE')
+
+    def execute(self, context):
+        if (self.action == 'START' or
+            self.action == 'TOGGLE' and not context.edit_text.external_editing):
+            return bpy.ops.text.external_edit_start('INVOKE_DEFAULT')
+        else:
+            return bpy.ops.text.external_edit_stop('INVOKE_DEFAULT')
+
 
 class TEXT_OT_external_text_editor_start(bpy.types.Operator):
     """Save current text to disk and edit it with external text editor \
@@ -308,6 +336,7 @@ class TEXT_OT_external_text_editor_start(bpy.types.Operator):
             context.window)
         context.window_manager.modal_handler_add(self)
         self.text.external_editing = True
+        tag_redraw(context)
 
         return {'RUNNING_MODAL'}
 
@@ -335,13 +364,8 @@ class TEXT_OT_external_text_editor_start(bpy.types.Operator):
 
             if wait:
                 self.text.external_editing = False
+                tag_redraw(context)
                 sync_text(context, self.text)
-
-                for a in context.screen.areas:
-                    if a.type == 'TEXT_EDITOR':
-                        for r in a.regions:
-                            if r.type == 'UI':
-                                r.tag_redraw()
 
         if self.text.external_editing:
             if self.editor.is_modified():
@@ -377,6 +401,7 @@ class TEXT_OT_external_text_editor_stop(bpy.types.Operator):
         text = context.edit_text
         if text.external_editing:
             text.external_editing = False
+            tag_redraw(context)
             sync_text(context, text)
 
         return {'FINISHED'}
