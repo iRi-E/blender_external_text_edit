@@ -39,18 +39,17 @@ PRESETS_DICT = OrderedDict((
     ("IDLE",         ["idle"]),
     ("IDLE (Debian)",["idle-python" + BPYVERSION]),
     ("Emacs",        ["emacs"]),
-    ("EmacsClient",  ["emacsclient", "", True, "emacs"]),
-    ("Vim",          ["gvim", "--remote-wait", True, ""]),
-    ("gedit",        ["gedit", "--wait", True, ""]),
-    ("Kate",         ["kate", "--block", True, ""]),
-    ("Atom",         ["atom", "", False]),
-    ("Eclipse",      ["eclipse", "", False]),
-    ("NetBeans",     ["netbeans", "", False]),
-    ("MonoDevelop",  ["monodevelop", "", False]),
-    ("Ninja IDE",    ["ninja-ide", "", False]),
-    ("PyCharm",      ["charm", "", False]),
-    ("Sakura",       ["sakura.exe"]),
-    ("Notepad++",    ["notepad++.exe", "", False]),
+    ("EmacsClient",  ["emacsclient", "",  True,  "emacs"]),
+    ("gedit",        ["gedit", "--wait",  True,  ""]),
+    ("Kate",         ["kate", "--block",  True,  ""]),
+    ("Eclipse",      ["eclipse", "",      False]),
+    ("Ninja IDE",    ["ninja-ide", "",    False]),
+    ("Notepad++",    ["notepad++", "",    False]),
+    ("GVim",         ["gvim", "--remote", False, ""]),
+    ("Atom",         ["atom", "",         False, ""]),
+    ("MonoDevelop",  ["monodevelop", "",  False, ""]),
+    ("PyCharm",      ["charm", "",        False, ""]),
+    #("NetBeans",     ["netbeans", "",     False, ""]), # untested
 ))
 
 
@@ -127,7 +126,8 @@ class TEXT_OT_external_text_editor_execute_preset(bpy.types.Operator):
 
         def draw_popup(popup, context):
             layout = popup.layout
-            layout.label(message, icon='INFO')
+            for m in messages:
+                layout.label(m, icon='INFO')
 
         preset_class = getattr(bpy.types, "external_text_editor.presets")
         preset_class.bl_label = self.preset
@@ -138,18 +138,16 @@ class TEXT_OT_external_text_editor_execute_preset(bpy.types.Operator):
         context.window_manager.external_text_editor.arguments = arguments
         context.window_manager.external_text_editor.wait = wait
 
+        messages = []
+        if server is not None:
+            messages.append("First of all, you have to start '{0}' as a server"
+                            " outside Blender".format(server or command))
         if not wait:
-            message = ("You need to manually stop auto-reload"
-                       " after closing file in external text editor")
-        elif server is not None:
-            message = ("First of all, you have to start '{0}' as a server"
-                       " outside Blender").format(server or command)
-        else:
-            message = ""
+            messages.append("You need to manually stop auto-reload"
+                            " after closing file in external text editor")
 
-        if message:
+        if messages:
             title = "'{}' preset applied".format(self.preset)
-            #self.report({'INFO'}, message)
             context.window_manager.popup_menu(draw_popup, title=title)
 
         return {'FINISHED'}
