@@ -28,7 +28,7 @@ bl_info = {
 
 import bpy, rna_xml
 from bpy.app.handlers import persistent
-import sys, os, os.path, shlex, subprocess, tempfile
+import sys, os, os.path, shlex, subprocess, tempfile, time
 from collections import OrderedDict
 
 # presets data
@@ -183,6 +183,9 @@ class TEXT_PT_external_text_editor(bpy.types.Panel):
             row = col.row(align=True)
             row.operator("text.external_edit_start", text="Start")
             row.operator("text.external_edit_stop", text="Stop")
+            row = col.row(align=True)
+            row.operator("text.external_edit_start_all", text="Start All")
+            row.operator("text.external_edit_stop_all", text="Stop All")
             col.prop(context.window_manager.external_text_editor, "interval")
             col.prop(context.window_manager.external_text_editor, "launch")
 
@@ -295,31 +298,10 @@ def tag_redraw(context):
                     r.tag_redraw()
 
 
-class TEXT_OT_external_text_editor(bpy.types.Operator):
-    """Start/stop external text edit"""
-    bl_idname = "text.external_edit"
-    bl_label = "Edit Text with External Editor"
-
-    action = bpy.props.EnumProperty(
-        items=[('START', "Start", "Start external edit"),
-               ('STOP',  "Stop",  "Stop external edit"),
-               ('TOGGLE', "Toggle", "Toggle external edit")],
-        name="Action",
-        description="Specify 'Start' or 'Stop' if necessary to force",
-        default='TOGGLE')
-
-    def execute(self, context):
-        if (self.action == 'START' or
-            self.action == 'TOGGLE' and not context.edit_text.external_editing):
-            return bpy.ops.text.external_edit_start('INVOKE_DEFAULT')
-        else:
-            return bpy.ops.text.external_edit_stop('INVOKE_DEFAULT')
-
-
 class TEXT_OT_external_text_editor_start(bpy.types.Operator):
     """Save current text to disk and start automatic reload"""
     bl_idname = "text.external_edit_start"
-    bl_label = "Edit Text with External Editor"
+    bl_label = "Start External Text Edit"
 
     @classmethod
     def poll(cls, context):
@@ -422,6 +404,80 @@ editor before doing this)"""
             tag_redraw(context)
             sync_text(context, text)
 
+        return {'FINISHED'}
+
+
+class TEXT_OT_external_text_editor(bpy.types.Operator):
+    """Start/stop external text edit"""
+    bl_idname = "text.external_edit"
+    bl_label = "Edit Text with External Editor"
+
+    action = bpy.props.EnumProperty(
+        items=[('START', "Start", "Start external edit"),
+               ('STOP',  "Stop",  "Stop external edit"),
+               ('TOGGLE', "Toggle", "Toggle external edit")],
+        name="Action",
+        description="Specify 'Start' or 'Stop' if necessary to force",
+        default='TOGGLE')
+
+    def execute(self, context):
+        if (self.action == 'START' or
+            self.action == 'TOGGLE' and not context.edit_text.external_editing):
+            bpy.ops.text.external_edit_start('INVOKE_DEFAULT')
+        else:
+            bpy.ops.text.external_edit_stop('INVOKE_DEFAULT')
+
+        return {'FINISHED'}
+
+
+class TEXT_OT_external_text_editor_start_all(bpy.types.Operator):
+    """Start external edits for all texts"""
+    bl_idname = "text.external_edit_start_all"
+    bl_label = "Start External Text Edit All"
+
+    @classmethod
+    def poll(cls, context):
+        for text in bpy.data.texts:
+            if not text.external_editing:
+                return True
+        return False
+
+    def execute(self, context):
+        c = context.copy()
+        for text in bpy.data.texts:
+            if not text.external_editing:
+                if not (text.filepath or
+                        context.window_manager.external_text_editor.launch):
+                    self.report({'ERROR'}, "Turn \"Launch External Editor\" on"
+                                " if you want to edit internal texts")
+                else:
+                    c["edit_text"] = text
+                    bpy.ops.text.external_edit_start(c, 'INVOKE_DEFAULT')
+                    time.sleep(0.1) # workaround for gvim failing to open files
+        return {'FINISHED'}
+
+
+class TEXT_OT_external_text_editor_stop_all(bpy.types.Operator):
+    """Stop all of external text edits in progress"""
+    bl_idname = "text.external_edit_stop_all"
+    bl_label = "Stop External Text Edit All"
+
+    @classmethod
+    def poll(cls, context):
+        for text in bpy.data.texts:
+            if text.external_editing:
+                return True
+        return False
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def execute(self, context):
+        c = context.copy()
+        for text in bpy.data.texts:
+            if text.external_editing:
+                c["edit_text"] = text
+                bpy.ops.text.external_edit_stop(c, 'EXEC_DEFAULT')
         return {'FINISHED'}
 
 
