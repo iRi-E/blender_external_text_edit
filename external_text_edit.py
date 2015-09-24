@@ -457,7 +457,8 @@ class TEXT_OT_external_text_edit_start_all(bpy.types.Operator):
 
 
 class TEXT_OT_external_text_edit_stop_all(bpy.types.Operator):
-    """Stop all of external text edits in progress"""
+    """Stop all of external text edits in progress (it would be better \
+to terminate the auto-launched external editor before doing this)"""
     bl_idname = "text.external_edit_stop_all"
     bl_label = "Stop External Text Edit All"
 
