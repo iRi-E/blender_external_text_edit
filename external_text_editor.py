@@ -108,7 +108,7 @@ class ExternalTextEditor(bpy.types.PropertyGroup):
 
     wait = bpy.props.BoolProperty(
         name="Wait for Return",
-        description="Stop automatic reload when the external text editor terminates",
+        description="Automatically stop the auto-reload when the command terminates",
         default=True,
         update = save_settings)
 
