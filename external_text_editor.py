@@ -44,6 +44,7 @@ PRESETS_DICT = OrderedDict((
     ("Kate",         ["kate", "--block",  True,  ""]),
     ("Eclipse",      ["eclipse", "",      False]),
     ("Ninja IDE",    ["ninja-ide", "",    False]),
+    ("Geany",        ["geany", "",        False]),
     ("Notepad++",    ["notepad++", "",    False]),
     ("GVim",         ["gvim", "--remote", False, ""]),
     ("Atom",         ["atom", "",         False, ""]),
