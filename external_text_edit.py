@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Edit Text with External Editor",
     "author": "IRIE Shinsuke",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (2, 75, 0),
     "location": "Text Editor > Properties > External Text Edit",
     "description": "Edit text with external text editor and reload automatically",
