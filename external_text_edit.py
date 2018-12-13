@@ -16,6 +16,16 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+import bpy
+from bpy.app.handlers import persistent
+import sys
+import os
+import shlex
+import subprocess
+import tempfile
+import time
+from collections import OrderedDict
+
 bl_info = {
     "name": "Edit Text with External Editor",
     "author": "IRIE Shinsuke",
@@ -26,31 +36,26 @@ bl_info = {
     "tracker_url": "https://github.com/iRi-E/blender_external_text_edit/issues",
     "category": "Text Editor"}
 
-import bpy, rna_xml
-from bpy.app.handlers import persistent
-import sys, os, os.path, shlex, subprocess, tempfile, time
-from collections import OrderedDict
-
 # presets data
 BPYVERSION = "{}.{}".format(sys.version_info.major, sys.version_info.minor)
 
 PRESETS_DICT = OrderedDict((
     # label            command  args  wait  server
-    ("IDLE",         ["idle"]),
-    ("IDLE (Debian)",["idle-python" + BPYVERSION]),
-    ("Emacs",        ["emacs"]),
-    ("EmacsClient",  ["emacsclient", "",  True,  "emacs"]),
-    ("gedit",        ["gedit", "--wait",  True,  ""]),
-    ("Kate",         ["kate", "--block",  True,  ""]),
-    ("Eclipse",      ["eclipse", "",      False]),
-    ("Ninja IDE",    ["ninja-ide", "",    False]),
-    ("Geany",        ["geany", "",        False]),
-    ("Notepad++",    ["notepad++", "",    False]),
-    ("GVim",         ["gvim", "--remote", False, ""]),
-    ("Atom",         ["atom", "",         False, ""]),
-    ("MonoDevelop",  ["monodevelop", "",  False, ""]),
-    ("PyCharm",      ["charm", "",        False, ""]),
-    #("NetBeans",     ["netbeans", "",     False, ""]), # untested
+    ("IDLE",          ["idle"]),
+    ("IDLE (Debian)", ["idle-python" + BPYVERSION]),
+    ("Emacs",         ["emacs"]),
+    ("EmacsClient",   ["emacsclient", "",  True,  "emacs"]),
+    ("gedit",         ["gedit", "--wait",  True,  ""]),
+    ("Kate",          ["kate", "--block",  True,  ""]),
+    ("Eclipse",       ["eclipse", "",      False]),
+    ("Ninja IDE",     ["ninja-ide", "",    False]),
+    ("Geany",         ["geany", "",        False]),
+    ("Notepad++",     ["notepad++", "",    False]),
+    ("GVim",          ["gvim", "--remote", False, ""]),
+    ("Atom",          ["atom", "",         False, ""]),
+    ("MonoDevelop",   ["monodevelop", "",  False, ""]),
+    ("PyCharm",       ["charm", "",        False, ""]),
+    # ("NetBeans",      ["netbeans", "",     False, ""]), # untested
 ))
 
 
@@ -58,18 +63,20 @@ PRESETS_DICT = OrderedDict((
 CONFIG_PATH = os.path.join(bpy.utils.user_resource('CONFIG'),
                            "external_text_edit_config.py")
 
+
 def save_settings(self, context):
-    #print("external_text_edit: save settings {}".format(CONFIG_PATH))
+    # print("external_text_edit: save settings {}".format(CONFIG_PATH))
     with open(CONFIG_PATH, mode="w", encoding="UTF-8") as f:
         for prop in ("interval", "launch", "command", "arguments", "wait"):
             val = getattr(context.window_manager.external_text_edit, prop)
             f.write("bpy.context.window_manager.external_text_edit['{}']"
                     " = {!r}\n".format(prop, val))
 
+
 @persistent
 def load_settings(arg=None):
     if os.path.isfile(CONFIG_PATH):
-        #print("external_text_edit: load settings {}".format(CONFIG_PATH))
+        # print("external_text_edit: load settings {}".format(CONFIG_PATH))
         with open(CONFIG_PATH, encoding="UTF-8") as f:
             exec(f.read())
     else:
@@ -85,32 +92,32 @@ class ExternalTextEditor(bpy.types.PropertyGroup):
         min=0.1,
         max=10.0,
         default=1.0,
-        update = save_settings)
+        update=save_settings)
 
     launch = bpy.props.BoolProperty(
         name="Launch External Editor",
         description="Automatically launch external editor when starting auto-reload",
         default=True,
-        update = save_settings)
+        update=save_settings)
 
     command = bpy.props.StringProperty(
         subtype="FILE_PATH",
         name="Command",
         description="File path to text editor program",
         default="emacs",
-        update = save_settings)
+        update=save_settings)
 
     arguments = bpy.props.StringProperty(
         name="Arguments",
         description="Command line options to give to the external text editor",
         default="",
-        update = save_settings)
+        update=save_settings)
 
     wait = bpy.props.BoolProperty(
         name="Wait for Return",
         description="Automatically stop the auto-reload when the command terminates",
         default=True,
-        update = save_settings)
+        update=save_settings)
 
 
 # define UI
@@ -171,7 +178,7 @@ class TEXT_PT_external_text_edit(bpy.types.Panel):
     bl_space_type = 'TEXT_EDITOR'
     bl_region_type = 'UI'
     bl_label = "External Text Edit"
-    #bl_options = {"DEFAULT_CLOSED"}
+    # bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         layout = self.layout
@@ -205,6 +212,7 @@ class TEXT_MT_external_text_edit(bpy.types.Menu):
         layout = self.layout
         layout.operator("text.external_edit_start", text="Start")
         layout.operator("text.external_edit_stop", text="Stop")
+
 
 def TEXT_MT_text_external_text_edit(self, context):
     layout = self.layout
@@ -280,14 +288,16 @@ class ExternalEditorManager():
 def sync_text(context, text):
     if text.filepath and text.is_dirty:
         # unset 'is_dirty' flag
-        bpy.ops.text.save({"edit_text":text, "window":context.window,
-                           "area":context.area, "region":context.region})
+        bpy.ops.text.save({"edit_text": text, "window": context.window,
+                           "area": context.area, "region": context.region})
+
 
 def ignore_conflict(context, text):
     if text.filepath:
         # unset 'is_modified' flag
         bpy.ops.text.resolve_conflict(
-            {"edit_text":text, "window":context.window}, resolution='IGNORE')
+            {"edit_text": text, "window": context.window}, resolution='IGNORE')
+
 
 def tag_redraw(context):
     for a in context.screen.areas:
@@ -420,8 +430,8 @@ class TEXT_OT_external_text_edit(bpy.types.Operator):
         default='TOGGLE')
 
     def execute(self, context):
-        if (self.action == 'START' or
-            self.action == 'TOGGLE' and not context.edit_text.external_editing):
+        if self.action == 'START' or \
+           self.action == 'TOGGLE' and not context.edit_text.external_editing:
             bpy.ops.text.external_edit_start('INVOKE_DEFAULT')
         else:
             bpy.ops.text.external_edit_stop('INVOKE_DEFAULT')
@@ -452,7 +462,7 @@ class TEXT_OT_external_text_edit_start_all(bpy.types.Operator):
                 else:
                     c["edit_text"] = text
                     bpy.ops.text.external_edit_start(c, 'INVOKE_DEFAULT')
-                    time.sleep(0.1) # workaround for gvim failing to open files
+                    time.sleep(0.1)  # workaround for gvim failing to open files
         return {'FINISHED'}
 
 
@@ -498,6 +508,7 @@ def register():
         options={'SKIP_SAVE'})
     bpy.types.TEXT_MT_text.append(TEXT_MT_text_external_text_edit)
     bpy.app.handlers.load_post.append(load_settings)
+
 
 def unregister():
     del bpy.types.WindowManager.external_text_edit
