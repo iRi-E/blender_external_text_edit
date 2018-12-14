@@ -30,7 +30,7 @@ bl_info = {
     "name": "Edit Text with External Editor",
     "author": "IRIE Shinsuke",
     "version": (1, 0, 1),
-    "blender": (2, 75, 0),
+    "blender": (2, 80, 0),  # or (2, 79, 0)
     "location": "Text Editor > Properties > External Text Edit",
     "description": "Edit text with external text editor and reload automatically",
     "tracker_url": "https://github.com/iRi-E/blender_external_text_edit/issues",
@@ -135,7 +135,7 @@ class TEXT_OT_external_text_edit_execute_preset(bpy.types.Operator):
         def draw_popup(popup, context):
             layout = popup.layout
             for m in messages:
-                layout.label(m, icon='INFO')
+                layout.label(text=m, icon='INFO')
 
         preset_class = getattr(bpy.types, "external_text_edit.presets")
         preset_class.bl_label = self.preset
@@ -341,7 +341,7 @@ class TEXT_OT_external_text_edit_start(bpy.types.Operator):
 
         self.timer = context.window_manager.event_timer_add(
             context.window_manager.external_text_edit.interval,
-            context.window)
+            window=context.window)
         context.window_manager.modal_handler_add(self)
         self.text.external_editing = True
         tag_redraw(context)
@@ -492,8 +492,23 @@ to terminate the auto-launched external editor before doing this)"""
 
 
 # register this addon
+classes = (
+    ExternalTextEditor,
+    TEXT_OT_external_text_edit_execute_preset,
+    TEXT_MT_external_text_edit_presets,
+    TEXT_PT_external_text_edit,
+    TEXT_MT_external_text_edit,
+    TEXT_OT_external_text_edit_start,
+    TEXT_OT_external_text_edit_stop,
+    TEXT_OT_external_text_edit,
+    TEXT_OT_external_text_edit_start_all,
+    TEXT_OT_external_text_edit_stop_all,
+)
+
+
 def register():
-    bpy.utils.register_module(__name__)
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
     bpy.types.WindowManager.external_text_edit = bpy.props.PointerProperty(
         type=ExternalTextEditor,
@@ -516,7 +531,8 @@ def unregister():
     bpy.types.TEXT_MT_text.remove(TEXT_MT_text_external_text_edit)
     bpy.app.handlers.load_post.remove(load_settings)
 
-    bpy.utils.unregister_module(__name__)
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
 
 
 if __name__ == "__main__":
