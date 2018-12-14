@@ -84,7 +84,7 @@ def load_settings(arg=None):
               .format(CONFIG_PATH))
 
 
-class ExternalTextEditor(bpy.types.PropertyGroup):
+class ExternalTextEditProps(bpy.types.PropertyGroup):
 
     interval = bpy.props.FloatProperty(
         name="Interval",
@@ -121,9 +121,9 @@ class ExternalTextEditor(bpy.types.PropertyGroup):
 
 
 # define UI
-class TEXT_OT_external_text_edit_execute_preset(bpy.types.Operator):
+class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
     """Execute a preset"""
-    bl_idname = "external_text_edit.execute_preset"
+    bl_idname = "text.external_edit_execute_preset"
     bl_label = "Execute a Preset of Edit Text External"
 
     preset = bpy.props.StringProperty(options={'SKIP_SAVE'})
@@ -161,7 +161,7 @@ class TEXT_OT_external_text_edit_execute_preset(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TEXT_MT_external_text_edit_presets(bpy.types.Menu):
+class TEXT_MT_external_edit_presets(bpy.types.Menu):
     bl_idname = "external_text_edit.presets"
     bl_label = "Presets"
 
@@ -169,12 +169,12 @@ class TEXT_MT_external_text_edit_presets(bpy.types.Menu):
         layout = self.layout
 
         for preset in PRESETS_DICT.keys():
-            props = layout.operator("external_text_edit.execute_preset",
+            props = layout.operator("text.external_edit_execute_preset",
                                     text=preset)
             props.preset = preset
 
 
-class TEXT_PT_external_text_edit(bpy.types.Panel):
+class TEXT_PT_external_edit(bpy.types.Panel):
     bl_space_type = 'TEXT_EDITOR'
     bl_region_type = 'UI'
     bl_label = "External Text Edit"
@@ -199,13 +199,13 @@ class TEXT_PT_external_text_edit(bpy.types.Panel):
                 col = layout.column(align=True)
                 col.label(text="External Editor Settings:")
                 col.menu("external_text_edit.presets",
-                         text=TEXT_MT_external_text_edit_presets.bl_label)
+                         text=TEXT_MT_external_edit_presets.bl_label)
                 col.prop(context.window_manager.external_text_edit, "command")
                 col.prop(context.window_manager.external_text_edit, "arguments")
                 col.prop(context.window_manager.external_text_edit, "wait")
 
 
-class TEXT_MT_external_text_edit(bpy.types.Menu):
+class TEXT_MT_external_edit(bpy.types.Menu):
     bl_label = "Edit with External Editor"
 
     def draw(self, context):
@@ -214,10 +214,10 @@ class TEXT_MT_external_text_edit(bpy.types.Menu):
         layout.operator("text.external_edit_stop", text="Stop")
 
 
-def TEXT_MT_text_external_text_edit(self, context):
+def external_text_edit_menu(self, context):
     layout = self.layout
     if context.edit_text:
-        layout.menu("TEXT_MT_external_text_edit", icon='PLUGIN')
+        layout.menu("TEXT_MT_external_edit", icon='PLUGIN')
 
 
 # main part
@@ -307,7 +307,7 @@ def tag_redraw(context):
                     r.tag_redraw()
 
 
-class TEXT_OT_external_text_edit_start(bpy.types.Operator):
+class TEXT_OT_external_edit_start(bpy.types.Operator):
     """Save current text to disk and start automatic reload"""
     bl_idname = "text.external_edit_start"
     bl_label = "Start External Text Edit"
@@ -392,7 +392,7 @@ class TEXT_OT_external_text_edit_start(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
-class TEXT_OT_external_text_edit_stop(bpy.types.Operator):
+class TEXT_OT_external_edit_stop(bpy.types.Operator):
     """Stop automatic reload and delete temporary file created for \
 internal text (it would be better to terminate the auto-launched external \
 editor before doing this)"""
@@ -416,7 +416,7 @@ editor before doing this)"""
         return {'FINISHED'}
 
 
-class TEXT_OT_external_text_edit(bpy.types.Operator):
+class TEXT_OT_external_edit(bpy.types.Operator):
     """Start/stop external text edit"""
     bl_idname = "text.external_edit"
     bl_label = "Edit Text with External Editor"
@@ -439,7 +439,7 @@ class TEXT_OT_external_text_edit(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TEXT_OT_external_text_edit_start_all(bpy.types.Operator):
+class TEXT_OT_external_edit_start_all(bpy.types.Operator):
     """Start external edits for all texts"""
     bl_idname = "text.external_edit_start_all"
     bl_label = "Start External Text Edit All"
@@ -466,7 +466,7 @@ class TEXT_OT_external_text_edit_start_all(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TEXT_OT_external_text_edit_stop_all(bpy.types.Operator):
+class TEXT_OT_external_edit_stop_all(bpy.types.Operator):
     """Stop all of external text edits in progress (it would be better \
 to terminate the auto-launched external editor before doing this)"""
     bl_idname = "text.external_edit_stop_all"
@@ -493,16 +493,16 @@ to terminate the auto-launched external editor before doing this)"""
 
 # register this addon
 classes = (
-    ExternalTextEditor,
-    TEXT_OT_external_text_edit_execute_preset,
-    TEXT_MT_external_text_edit_presets,
-    TEXT_PT_external_text_edit,
-    TEXT_MT_external_text_edit,
-    TEXT_OT_external_text_edit_start,
-    TEXT_OT_external_text_edit_stop,
-    TEXT_OT_external_text_edit,
-    TEXT_OT_external_text_edit_start_all,
-    TEXT_OT_external_text_edit_stop_all,
+    ExternalTextEditProps,
+    TEXT_OT_external_edit_execute_preset,
+    TEXT_MT_external_edit_presets,
+    TEXT_PT_external_edit,
+    TEXT_MT_external_edit,
+    TEXT_OT_external_edit_start,
+    TEXT_OT_external_edit_stop,
+    TEXT_OT_external_edit,
+    TEXT_OT_external_edit_start_all,
+    TEXT_OT_external_edit_stop_all,
 )
 
 
@@ -511,7 +511,7 @@ def register():
         bpy.utils.register_class(cls)
 
     bpy.types.WindowManager.external_text_edit = bpy.props.PointerProperty(
-        type=ExternalTextEditor,
+        type=ExternalTextEditProps,
         name="Settings",
         description="Specify how the external text editor will be executed",
         options={'SKIP_SAVE'})
@@ -521,14 +521,14 @@ def register():
         description="Setting the value to 'False' will stop external editing",
         default=False,
         options={'SKIP_SAVE'})
-    bpy.types.TEXT_MT_text.append(TEXT_MT_text_external_text_edit)
+    bpy.types.TEXT_MT_text.append(external_text_edit_menu)
     bpy.app.handlers.load_post.append(load_settings)
 
 
 def unregister():
     del bpy.types.WindowManager.external_text_edit
     del bpy.types.Text.external_editing
-    bpy.types.TEXT_MT_text.remove(TEXT_MT_text_external_text_edit)
+    bpy.types.TEXT_MT_text.remove(external_text_edit_menu)
     bpy.app.handlers.load_post.remove(load_settings)
 
     for cls in classes:
