@@ -61,8 +61,7 @@ PRESETS_DICT = OrderedDict((
 
 
 # settings
-CONFIG_PATH = os.path.join(bpy.utils.user_resource('CONFIG'),
-                           "external_text_edit_config.py")
+CONFIG_PATH = os.path.join(bpy.utils.user_resource('CONFIG'), "external_text_edit_config.py")
 
 
 def save_settings(self, context):
@@ -70,8 +69,7 @@ def save_settings(self, context):
     with open(CONFIG_PATH, mode="w", encoding="UTF-8") as f:
         for prop in ("interval", "launch", "command", "arguments", "wait"):
             val = getattr(context.window_manager.external_text_edit, prop)
-            f.write("bpy.context.window_manager.external_text_edit['{}']"
-                    " = {!r}\n".format(prop, val))
+            f.write("bpy.context.window_manager.external_text_edit['{}'] = {!r}\n".format(prop, val))
 
 
 @persistent
@@ -81,8 +79,7 @@ def load_settings(arg=None):
         with open(CONFIG_PATH, encoding="UTF-8") as f:
             exec(f.read())
     else:
-        print("external_text_edit: settings file '{}' not found"
-              .format(CONFIG_PATH))
+        print("external_text_edit: settings file '{}' not found".format(CONFIG_PATH))
 
 
 class ExternalTextEditProps(bpy.types.PropertyGroup):
@@ -149,8 +146,8 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
 
         messages = []
         if server is not None:
-            messages.append("You need to manually launch '{0}' before"
-                            " starting external edit".format(server or command))
+            messages.append("You need to manually launch '{0}' before starting external edit"
+                            .format(server or command))
         if not wait:
             messages.append("You need to manually stop the automatic reloading")
 
@@ -169,8 +166,7 @@ class TEXT_MT_external_edit_presets(bpy.types.Menu):
         layout = self.layout
 
         for preset in PRESETS_DICT.keys():
-            props = layout.operator("text.external_edit_execute_preset",
-                                    text=preset)
+            props = layout.operator("text.external_edit_execute_preset", text=preset)
             props.preset = preset
 
 
@@ -198,8 +194,7 @@ class TEXT_PT_external_edit(bpy.types.Panel):
             if context.window_manager.external_text_edit.launch:
                 col = layout.column(align=True)
                 col.label(text="External Editor Settings:")
-                col.menu("external_text_edit.presets",
-                         text=TEXT_MT_external_edit_presets.bl_label)
+                col.menu("external_text_edit.presets", text=TEXT_MT_external_edit_presets.bl_label)
                 col.prop(context.window_manager.external_text_edit, "command")
                 col.prop(context.window_manager.external_text_edit, "arguments")
                 col.prop(context.window_manager.external_text_edit, "wait")
@@ -228,8 +223,7 @@ class ExternalEditorManager():
         self.internal = not text.filepath
 
         if self.internal:
-            self.filename = tempfile.mkstemp(
-                prefix="", suffix="-"+text.name, text=True)[1]
+            self.filename = tempfile.mkstemp(prefix="", suffix="-"+text.name, text=True)[1]
             print("copy internal text to temporary file '{}'".format(self.filename))
             with open(self.filename, mode="w", encoding="UTF-8") as f:
                 f.write(text.as_string())
@@ -295,8 +289,7 @@ def sync_text(context, text):
 def ignore_conflict(context, text):
     if text.filepath:
         # unset 'is_modified' flag
-        bpy.ops.text.resolve_conflict(
-            {"edit_text": text, "window": context.window}, resolution='IGNORE')
+        bpy.ops.text.resolve_conflict({"edit_text": text, "window": context.window}, resolution='IGNORE')
 
 
 def tag_redraw(context):
@@ -320,10 +313,8 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
         self.text = context.edit_text
         self.subproc_running = False
 
-        if not (self.text.filepath or
-                context.window_manager.external_text_edit.launch):
-            self.report({'ERROR'}, "Turn on \"Launch External Editor\""
-                        " if you want to edit internal texts")
+        if not (self.text.filepath or context.window_manager.external_text_edit.launch):
+            self.report({'ERROR'}, "Turn on \"Launch External Editor\" if you want to edit internal texts")
             return {'CANCELLED'}
 
         sync_text(context, self.text)
@@ -393,9 +384,8 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
 
 
 class TEXT_OT_external_edit_stop(bpy.types.Operator):
-    """Stop automatic reload and delete temporary file created for \
-internal text (it would be better to terminate the auto-launched external \
-editor before doing this)"""
+    """Stop automatic reload and delete temporary file created for internal text \
+(it would be better to terminate the auto-launched external editor before doing this)"""
     bl_idname = "text.external_edit_stop"
     bl_label = "Stop External Text Edit"
 
@@ -455,10 +445,8 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
         c = context.copy()
         for text in bpy.data.texts:
             if not text.external_editing:
-                if not (text.filepath or
-                        context.window_manager.external_text_edit.launch):
-                    self.report({'ERROR'}, "Turn on \"Launch External Editor\""
-                                " if you want to edit internal texts")
+                if not (text.filepath or context.window_manager.external_text_edit.launch):
+                    self.report({'ERROR'}, "Turn on \"Launch External Editor\" if you want to edit internal texts")
                 else:
                     c["edit_text"] = text
                     bpy.ops.text.external_edit_start(c, 'INVOKE_DEFAULT')
