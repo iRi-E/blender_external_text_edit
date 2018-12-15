@@ -41,11 +41,12 @@ BPYVERSION = "{}.{}".format(sys.version_info.major, sys.version_info.minor)
 
 PRESETS_DICT = OrderedDict((
     # label            command  args  wait  server
+    ("VS Code",       ["code", "--wait"]),
+    ("gedit",         ["gedit", "--wait"]),
     ("IDLE",          ["idle"]),
     ("IDLE (Debian)", ["idle-python" + BPYVERSION]),
     ("Emacs",         ["emacs"]),
     ("EmacsClient",   ["emacsclient", "",  True,  "emacs"]),
-    ("gedit",         ["gedit", "--wait",  True,  ""]),
     ("Kate",          ["kate", "--block",  True,  ""]),
     ("Eclipse",       ["eclipse", "",      False]),
     ("Ninja IDE",     ["ninja-ide", "",    False]),
