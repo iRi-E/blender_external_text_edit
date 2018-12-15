@@ -149,11 +149,10 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
 
         messages = []
         if server is not None:
-            messages.append("First of all, you have to start '{0}' as a server"
-                            " outside Blender".format(server or command))
+            messages.append("You need to manually launch '{0}' before"
+                            " starting external edit".format(server or command))
         if not wait:
-            messages.append("You need to manually stop auto-reload"
-                            " after closing file in external text editor")
+            messages.append("You need to manually stop the automatic reloading")
 
         if messages:
             title = "'{}' preset applied".format(self.preset)
@@ -323,7 +322,7 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
 
         if not (self.text.filepath or
                 context.window_manager.external_text_edit.launch):
-            self.report({'ERROR'}, "Turn \"Launch External Editor\" on"
+            self.report({'ERROR'}, "Turn on \"Launch External Editor\""
                         " if you want to edit internal texts")
             return {'CANCELLED'}
 
@@ -458,7 +457,7 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
             if not text.external_editing:
                 if not (text.filepath or
                         context.window_manager.external_text_edit.launch):
-                    self.report({'ERROR'}, "Turn \"Launch External Editor\" on"
+                    self.report({'ERROR'}, "Turn on \"Launch External Editor\""
                                 " if you want to edit internal texts")
                 else:
                     c["edit_text"] = text
