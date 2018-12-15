@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from bpy.app.handlers import persistent
 import sys
 import os
 import shlex
@@ -40,82 +39,82 @@ bl_info = {
 BPYVERSION = "{}.{}".format(sys.version_info.major, sys.version_info.minor)
 
 PRESETS_DICT = OrderedDict((
-    # label            command  args  wait  server
-    ("VS Code",       ["code", "--wait"]),
-    ("gedit",         ["gedit", "--wait"]),
+    # label            command  args       wait   server
     ("IDLE",          ["idle"]),
     ("IDLE (Debian)", ["idle-python" + BPYVERSION]),
     ("Emacs",         ["emacs"]),
     ("EmacsClient",   ["emacsclient", "",  True,  "emacs"]),
-    ("Kate",          ["kate", "--block",  True,  ""]),
+    ("VS Code",       ["code", "--wait"]),
+    ("gedit",         ["gedit", "--wait"]),
+    ("Kate",          ["kate", "--block",  True,  True]),
     ("Eclipse",       ["eclipse", "",      False]),
     ("Ninja IDE",     ["ninja-ide", "",    False]),
     ("Geany",         ["geany", "",        False]),
     ("Notepad++",     ["notepad++", "",    False]),
-    ("GVim",          ["gvim", "--remote", False, ""]),
-    ("Atom",          ["atom", "",         False, ""]),
-    ("MonoDevelop",   ["monodevelop", "",  False, ""]),
-    ("PyCharm",       ["charm", "",        False, ""]),
-    # ("NetBeans",      ["netbeans", "",     False, ""]), # untested
+    ("GVim",          ["gvim", "--remote", False, True]),
+    ("Atom",          ["atom", "",         False, True]),
+    ("MonoDevelop",   ["monodevelop", "",  False, True]),
+    ("PyCharm",       ["charm", "",        False, True]),
+    # ("NetBeans",      ["netbeans", "",     False, True]), # untested
 ))
 
 
-# settings
-CONFIG_PATH = os.path.join(bpy.utils.user_resource('CONFIG'), "external_text_edit_config.py")
-
-
-def save_settings(self, context):
-    # print("external_text_edit: save settings {}".format(CONFIG_PATH))
-    with open(CONFIG_PATH, mode="w", encoding="UTF-8") as f:
-        for prop in ("interval", "launch", "command", "arguments", "wait"):
-            val = getattr(context.window_manager.external_text_edit, prop)
-            f.write("bpy.context.window_manager.external_text_edit['{}'] = {!r}\n".format(prop, val))
-
-
-@persistent
-def load_settings(arg=None):
-    if os.path.isfile(CONFIG_PATH):
-        # print("external_text_edit: load settings {}".format(CONFIG_PATH))
-        with open(CONFIG_PATH, encoding="UTF-8") as f:
-            exec(f.read())
-    else:
-        print("external_text_edit: settings file '{}' not found".format(CONFIG_PATH))
-
-
-class ExternalTextEditProps(bpy.types.PropertyGroup):
+class ExternalTextEditPrefs(bpy.types.AddonPreferences):
+    # this must match the addon name, use '__package__'
+    # when defining this in a submodule of a python package.
+    bl_idname = __name__
 
     interval = bpy.props.FloatProperty(
         name="Interval",
         description="Time interval to watch if the file has been changed on disk",
         min=0.1,
         max=10.0,
-        default=1.0,
-        update=save_settings)
+        default=1.0)
 
     launch = bpy.props.BoolProperty(
         name="Launch External Editor",
         description="Automatically launch external editor when starting auto-reload",
-        default=True,
-        update=save_settings)
+        default=True)
 
     command = bpy.props.StringProperty(
         subtype="FILE_PATH",
         name="Command",
         description="File path to text editor program",
-        default="emacs",
-        update=save_settings)
+        default="emacs")
 
     arguments = bpy.props.StringProperty(
         name="Arguments",
         description="Command line options to give to the external text editor",
-        default="",
-        update=save_settings)
+        default="")
 
     wait = bpy.props.BoolProperty(
         name="Wait for Return",
         description="Automatically stop the auto-reload when the command terminates",
-        default=True,
-        update=save_settings)
+        default=True)
+
+    server = bpy.props.StringProperty(options={'SKIP_SAVE'})  # used only for presets
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        col.prop(self, "interval")
+        col.prop(self, "launch")
+
+        if self.launch:
+            col = layout.column(align=True)
+            col.label(text="External Editor Settings:")
+            col.menu("external_text_edit.presets", text=TEXT_MT_external_edit_presets.bl_label)
+            col.prop(self, "command")
+            col.prop(self, "arguments")
+            col.prop(self, "wait")
+
+            if self.server:
+                col.label(text="You need to manually launch '{0}' as a server before opening temp file"
+                          .format(self.server), icon='INFO')
+            if not self.wait:
+                col.label(text="You need to manually stop the automatic reload after closing temp file",
+                          icon='INFO')
 
 
 # define UI
@@ -127,33 +126,14 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
     preset = bpy.props.StringProperty(options={'SKIP_SAVE'})
 
     def execute(self, context):
-        def defaults(command, arguments="", wait=True, server=None):
-            return command, arguments, wait, server
-
-        def draw_popup(popup, context):
-            layout = popup.layout
-            for m in messages:
-                layout.label(text=m, icon='INFO')
+        def defaults(command, arguments="", wait=True, server=""):
+            return command, arguments, wait, command if server is True else server
 
         preset_class = getattr(bpy.types, "external_text_edit.presets")
         preset_class.bl_label = self.preset
 
-        command, arguments, wait, server = defaults(*PRESETS_DICT[self.preset])
-
-        context.window_manager.external_text_edit.command = command
-        context.window_manager.external_text_edit.arguments = arguments
-        context.window_manager.external_text_edit.wait = wait
-
-        messages = []
-        if server is not None:
-            messages.append("You need to manually launch '{0}' before starting external edit"
-                            .format(server or command))
-        if not wait:
-            messages.append("You need to manually stop the automatic reloading")
-
-        if messages:
-            title = "'{}' preset applied".format(self.preset)
-            context.window_manager.popup_menu(draw_popup, title=title)
+        prefs = context.user_preferences.addons[__name__].preferences
+        prefs.command, prefs.arguments, prefs.wait, prefs.server = defaults(*PRESETS_DICT[self.preset])
 
         return {'FINISHED'}
 
@@ -178,26 +158,17 @@ class TEXT_PT_external_edit(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        col = layout.column()
 
         text = context.edit_text
         if text:
-            col = layout.column()
             row = col.row(align=True)
             row.operator("text.external_edit_start", text="Start")
             row.operator("text.external_edit_stop", text="Stop")
-            row = col.row(align=True)
-            row.operator("text.external_edit_start_all", text="Start All")
-            row.operator("text.external_edit_stop_all", text="Stop All")
-            col.prop(context.window_manager.external_text_edit, "interval")
-            col.prop(context.window_manager.external_text_edit, "launch")
 
-            if context.window_manager.external_text_edit.launch:
-                col = layout.column(align=True)
-                col.label(text="External Editor Settings:")
-                col.menu("external_text_edit.presets", text=TEXT_MT_external_edit_presets.bl_label)
-                col.prop(context.window_manager.external_text_edit, "command")
-                col.prop(context.window_manager.external_text_edit, "arguments")
-                col.prop(context.window_manager.external_text_edit, "wait")
+        row = col.row(align=True)
+        row.operator("text.external_edit_start_all", text="Start All")
+        row.operator("text.external_edit_stop_all", text="Stop All")
 
 
 class TEXT_MT_external_edit(bpy.types.Menu):
@@ -312,27 +283,22 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
     def invoke(self, context, event):
         self.text = context.edit_text
         self.subproc_running = False
+        prefs = context.user_preferences.addons[__name__].preferences
 
-        if not (self.text.filepath or context.window_manager.external_text_edit.launch):
+        if not (self.text.filepath or prefs.launch):
             self.report({'ERROR'}, "Turn on \"Launch External Editor\" if you want to edit internal texts")
             return {'CANCELLED'}
 
         sync_text(context, self.text)
 
         try:
-            self.editor = ExternalEditorManager(
-                self.text,
-                context.window_manager.external_text_edit.launch,
-                context.window_manager.external_text_edit.command,
-                context.window_manager.external_text_edit.arguments)
+            self.editor = ExternalEditorManager(self.text, prefs.launch, prefs.command, prefs.arguments)
         except FileNotFoundError as err:
             self.report({'ERROR'}, "{}".format(err))
             return {'CANCELLED'}
         self.subproc_running = self.editor.is_alive()
 
-        self.timer = context.window_manager.event_timer_add(
-            context.window_manager.external_text_edit.interval,
-            window=context.window)
+        self.timer = context.window_manager.event_timer_add(prefs.interval, window=context.window)
         context.window_manager.modal_handler_add(self)
         self.text.external_editing = True
         tag_redraw(context)
@@ -355,13 +321,13 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
             stop_editing()
             return {'CANCELLED'}
 
-        wait = context.window_manager.external_text_edit.wait
+        prefs = context.user_preferences.addons[__name__].preferences
 
         if self.subproc_running and not self.editor.is_alive():
             print("external text editor was terminated")
             self.subproc_running = False
 
-            if wait:
+            if prefs.wait:
                 self.text.external_editing = False
                 tag_redraw(context)
                 sync_text(context, self.text)
@@ -372,7 +338,7 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
                 self.editor.update()
                 ignore_conflict(context, self.text)
         else:
-            if wait and self.subproc_running:
+            if prefs.wait and self.subproc_running:
                 print("external edit was stopped")
                 self.editor.terminate()
                 self.subproc_running = False
@@ -442,10 +408,12 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
         return False
 
     def execute(self, context):
+        prefs = context.user_preferences.addons[__name__].preferences
+
         c = context.copy()
         for text in bpy.data.texts:
             if not text.external_editing:
-                if not (text.filepath or context.window_manager.external_text_edit.launch):
+                if not (text.filepath or prefs.launch):
                     self.report({'ERROR'}, "Turn on \"Launch External Editor\" if you want to edit internal texts")
                 else:
                     c["edit_text"] = text
@@ -481,7 +449,7 @@ to terminate the auto-launched external editor before doing this)"""
 
 # register this addon
 classes = (
-    ExternalTextEditProps,
+    ExternalTextEditPrefs,
     TEXT_OT_external_edit_execute_preset,
     TEXT_MT_external_edit_presets,
     TEXT_PT_external_edit,
@@ -498,26 +466,17 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.WindowManager.external_text_edit = bpy.props.PointerProperty(
-        type=ExternalTextEditProps,
-        name="Settings",
-        description="Specify how the external text editor will be executed",
-        options={'SKIP_SAVE'})
-
     bpy.types.Text.external_editing = bpy.props.BoolProperty(
         name="Switch for External Editing",
         description="Setting the value to 'False' will stop external editing",
         default=False,
         options={'SKIP_SAVE'})
     bpy.types.TEXT_MT_text.append(external_text_edit_menu)
-    bpy.app.handlers.load_post.append(load_settings)
 
 
 def unregister():
-    del bpy.types.WindowManager.external_text_edit
     del bpy.types.Text.external_editing
     bpy.types.TEXT_MT_text.remove(external_text_edit_menu)
-    bpy.app.handlers.load_post.remove(load_settings)
 
     for cls in classes:
         bpy.utils.unregister_class(cls)
