@@ -27,7 +27,7 @@ import time
 from collections import OrderedDict
 
 bl_info = {
-    "name": "Edit Text with External Editor",
+    "name": "External Text Edit",
     "author": "IRIE Shinsuke",
     "version": (1, 0, 1),
     "blender": (2, 80, 0),  # or (2, 79, 0)
