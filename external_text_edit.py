@@ -45,6 +45,7 @@ PRESETS_DICT = OrderedDict((
     ("Emacs",         ["emacs"]),
     ("EmacsClient",   ["emacsclient", "",  True,  "emacs"]),
     ("VS Code",       ["code", "--wait"]),
+    ("Atom",          ["atom", "--wait"]),
     ("gedit",         ["gedit", "--wait"]),
     ("Kate",          ["kate", "--block",  True,  True]),
     ("Eclipse",       ["eclipse", "",      False]),
@@ -52,7 +53,6 @@ PRESETS_DICT = OrderedDict((
     ("Geany",         ["geany", "",        False]),
     ("Notepad++",     ["notepad++", "",    False]),
     ("GVim",          ["gvim", "--remote", False, True]),
-    ("Atom",          ["atom", "",         False, True]),
     ("MonoDevelop",   ["monodevelop", "",  False, True]),
     ("PyCharm",       ["charm", "",        False, True]),
     # ("NetBeans",      ["netbeans", "",     False, True]), # untested
