@@ -73,7 +73,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
 
     launch = bpy.props.BoolProperty(
         name="Launch External Editor",
-        description="Automatically launch external editor when starting auto-reload",
+        description="Automatically launch external editor when starting automatic reload",
         default=True)
 
     command = bpy.props.StringProperty(
@@ -89,7 +89,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
 
     wait = bpy.props.BoolProperty(
         name="Wait for Return",
-        description="Automatically stop the auto-reload when the command terminates",
+        description="Automatically stop the automatic reload when the command terminates outside Blender",
         default=True)
 
     server = bpy.props.StringProperty(options={'SKIP_SAVE'})  # used only for presets
@@ -113,7 +113,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
                 col.label(text="You need to manually launch '{0}' as a server before opening temp file"
                           .format(self.server), icon='INFO')
             if not self.wait:
-                col.label(text="You need to manually stop the automatic reload after closing temp file",
+                col.label(text="You need to manually stop the automatic reload after closing the temp file",
                           icon='INFO')
 
 
@@ -154,14 +154,14 @@ class TEXT_PT_external_edit(bpy.types.Panel):
     bl_space_type = 'TEXT_EDITOR'
     bl_region_type = 'UI'
     bl_label = "External Text Edit"
+    bl_category = "Text"
     # bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         layout = self.layout
         col = layout.column()
 
-        text = context.edit_text
-        if text:
+        if context.edit_text:
             row = col.row(align=True)
             row.operator("text.external_edit_start", text="Start")
             row.operator("text.external_edit_stop", text="Stop")
@@ -172,18 +172,22 @@ class TEXT_PT_external_edit(bpy.types.Panel):
 
 
 class TEXT_MT_external_edit(bpy.types.Menu):
-    bl_label = "Edit with External Editor"
+    bl_label = "External Text Edit"
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("text.external_edit_start", text="Start")
-        layout.operator("text.external_edit_stop", text="Stop")
+
+        if context.edit_text:
+            layout.operator("text.external_edit_start", text="Start")
+            layout.operator("text.external_edit_stop", text="Stop")
+
+        layout.operator("text.external_edit_start_all", text="Start All")
+        layout.operator("text.external_edit_stop_all", text="Stop All")
 
 
 def external_text_edit_menu(self, context):
     layout = self.layout
-    if context.edit_text:
-        layout.menu("TEXT_MT_external_edit", icon='PLUGIN')
+    layout.menu("TEXT_MT_external_edit", icon='PLUGIN')
 
 
 # main part
@@ -272,7 +276,7 @@ def tag_redraw(context):
 
 
 class TEXT_OT_external_edit_start(bpy.types.Operator):
-    """Save current text to disk and start automatic reload"""
+    """Save current text to disk if necessary and start watching file changes to reload automatically"""
     bl_idname = "text.external_edit_start"
     bl_label = "Start External Text Edit"
 
@@ -286,7 +290,8 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
         prefs = context.user_preferences.addons[__name__].preferences
 
         if not (self.text.filepath or prefs.launch):
-            self.report({'ERROR'}, "Turn on \"Launch External Editor\" if you want to edit internal texts")
+            err = "You need to turn on \"Launch External Editor\" in User Preferences to edit internal texts"
+            self.report({'ERROR'}, err)
             return {'CANCELLED'}
 
         sync_text(context, self.text)
@@ -350,8 +355,8 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
 
 
 class TEXT_OT_external_edit_stop(bpy.types.Operator):
-    """Stop automatic reload and delete temporary file created for internal text \
-(it would be better to terminate the auto-launched external editor before doing this)"""
+    """Stop the automatic reload and delete the temporary file if existing \
+(That will be done automatically when closing the temp file if "Wait for Return" in User Preferences is ON)"""
     bl_idname = "text.external_edit_stop"
     bl_label = "Stop External Text Edit"
 
@@ -414,7 +419,8 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
         for text in bpy.data.texts:
             if not text.external_editing:
                 if not (text.filepath or prefs.launch):
-                    self.report({'ERROR'}, "Turn on \"Launch External Editor\" if you want to edit internal texts")
+                    err = "You need to turn on \"Launch External Editor\" in User Preferences to edit internal texts"
+                    self.report({'ERROR'}, err)
                 else:
                     c["edit_text"] = text
                     bpy.ops.text.external_edit_start(c, 'INVOKE_DEFAULT')
@@ -423,8 +429,8 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
 
 
 class TEXT_OT_external_edit_stop_all(bpy.types.Operator):
-    """Stop all of external text edits in progress (it would be better \
-to terminate the auto-launched external editor before doing this)"""
+    """Stop all of external text edits in progress \
+(You may need to manually close the temporary files in the external text editor)"""
     bl_idname = "text.external_edit_stop_all"
     bl_label = "Stop External Text Edit All"
 
