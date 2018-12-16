@@ -356,7 +356,8 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
 
 class TEXT_OT_external_edit_stop(bpy.types.Operator):
     """Stop the automatic reload and delete the temporary file if existing \
-(That will be done automatically when closing the temp file if "Wait for Return" in User Preferences is ON)"""
+(That will be done automatically when closing the temp file in the external text editor \
+if "Wait for Return" in User Preferences is ON)"""
     bl_idname = "text.external_edit_stop"
     bl_label = "Stop External Text Edit"
 
