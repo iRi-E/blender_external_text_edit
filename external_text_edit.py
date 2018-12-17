@@ -64,7 +64,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
 
     interval = bpy.props.FloatProperty(
         name="Interval",
-        description="Time interval to watch if the file has been changed on disk",
+        description="Time interval to watch if the file has been changed on disk (in seconds)",
         min=0.1,
         max=10.0,
         default=1.0)
@@ -87,7 +87,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
 
     wait = bpy.props.BoolProperty(
         name="Wait for Return",
-        description="Automatically stop the automatic reload when the command terminates outside Blender",
+        description="Wait for the external command to be terminated and then stop the automatic reload",
         default=True)
 
     server = bpy.props.StringProperty(options={'SKIP_SAVE'})  # used only for presets
@@ -107,12 +107,12 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
             col.prop(self, "arguments")
             col.prop(self, "wait")
 
-            if self.server:
-                col.label(text="You need to manually launch '{0}' as a server before opening temp file"
-                          .format(self.server), icon='INFO')
             if not self.wait:
                 col.label(text="You need to manually stop the automatic reload after closing the temp file",
                           icon='INFO')
+            if self.server:
+                col.label(text="You need to manually launch '{0}' as a server before opening temp file"
+                          .format(self.server), icon='INFO')
 
 
 # define UI
