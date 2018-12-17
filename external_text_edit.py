@@ -299,8 +299,10 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
 
         try:
             self.editor = ExternalEditorManager(self.text, prefs.launch, prefs.command, prefs.arguments)
-        except FileNotFoundError as err:
-            self.report({'ERROR'}, "{}".format(err))
+        except FileNotFoundError:
+            err = "No such command or executable file in your system: {}\n" \
+                  "You need to specify an external text editor properly in User Preferences".format(prefs.command)
+            self.report({'ERROR'}, err)
             return {'CANCELLED'}
         self.subproc_running = self.editor.is_alive()
 
