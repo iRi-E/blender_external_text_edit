@@ -77,7 +77,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
     command = bpy.props.StringProperty(
         subtype="FILE_PATH",
         name="Command",
-        description="File path to text editor program",
+        description="Command name of an external text editor or file path to the executable file",
         default="emacs")
 
     arguments = bpy.props.StringProperty(
