@@ -19,9 +19,7 @@
 import bpy
 import sys
 import os
-import shlex
 import subprocess
-import tempfile
 import time
 from collections import OrderedDict
 
@@ -194,6 +192,9 @@ def external_text_edit_menu(self, context):
 class ExternalEditorManager():
 
     def __init__(self, text, launch, command, options):
+        import tempfile
+        import shlex
+
         self.text = text
         self.internal = not text.filepath
 
