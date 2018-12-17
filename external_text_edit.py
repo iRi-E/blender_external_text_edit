@@ -28,7 +28,7 @@ bl_info = {
     "author": "IRIE Shinsuke",
     "version": (1, 0, 1),
     "blender": (2, 80, 0),  # or (2, 79, 0)
-    "location": "Text Editor > Properties > External Text Edit",
+    "location": "Text Editor > Text > External Text Edit",
     "description": "Edit text with external text editor and reload automatically",
     "tracker_url": "https://github.com/iRi-E/blender_external_text_edit/issues",
     "category": "Text Editor"}
