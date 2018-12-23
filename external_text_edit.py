@@ -57,6 +57,10 @@ PRESETS_DICT = OrderedDict((
 ))
 
 
+def userPrefs(context):
+    return context.preferences if hasattr(context, "preferences") else context.user_preferences
+
+
 class ExternalTextEditPrefs(bpy.types.AddonPreferences):
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
@@ -130,7 +134,7 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
         preset_class = getattr(bpy.types, "external_text_edit.presets")
         preset_class.bl_label = self.preset
 
-        prefs = context.user_preferences.addons[__name__].preferences
+        prefs = userPrefs(context).addons[__name__].preferences
         prefs.command, prefs.arguments, prefs.wait, prefs.server = defaults(*PRESETS_DICT[self.preset])
 
         return {'FINISHED'}
@@ -288,7 +292,7 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
     def invoke(self, context, event):
         self.text = context.edit_text
         self.subproc_running = False
-        prefs = context.user_preferences.addons[__name__].preferences
+        prefs = userPrefs(context).addons[__name__].preferences
 
         if not (self.text.filepath or prefs.launch):
             err = "You need to turn on \"Launch External Editor\" in User Preferences to edit internal texts"
@@ -329,7 +333,7 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
             stop_editing()
             return {'CANCELLED'}
 
-        prefs = context.user_preferences.addons[__name__].preferences
+        prefs = userPrefs(context).addons[__name__].preferences
 
         if self.subproc_running and not self.editor.is_alive():
             print("external text editor was terminated")
@@ -417,7 +421,7 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
         return False
 
     def execute(self, context):
-        prefs = context.user_preferences.addons[__name__].preferences
+        prefs = userPrefs(context).addons[__name__].preferences
 
         c = context.copy()
         for text in bpy.data.texts:
