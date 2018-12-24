@@ -1,6 +1,6 @@
 # External Text Edit
 
-"External Text Edit" is a Blender addon to edit text in an external editor, even if the text is internal (not a separate file).
+"External Text Edit" is a Blender addon to edit text in an external editor, even if the text is internal (not a separate text file).
 
 ---
 
