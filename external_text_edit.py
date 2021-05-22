@@ -106,7 +106,7 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
         if self.launch:
             col = layout.column(align=True)
             col.label(text="External Editor Settings:")
-            col.menu("external_text_edit.presets", text=TEXT_MT_external_edit_presets.bl_label)
+            col.menu("TEXT_MT_external_edit_presets", text=TEXT_MT_external_edit_presets.bl_label)
             col.prop(self, "command")
             col.prop(self, "arguments")
             col.prop(self, "wait")
@@ -131,7 +131,7 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
         def defaults(command, arguments="", wait=True, server=""):
             return command, arguments, wait, command if server is True else server
 
-        preset_class = getattr(bpy.types, "external_text_edit.presets")
+        preset_class = getattr(bpy.types, "TEXT_MT_external_edit_presets")
         preset_class.bl_label = self.preset
 
         prefs = userPrefs(context).addons[__name__].preferences
@@ -141,7 +141,7 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
 
 
 class TEXT_MT_external_edit_presets(bpy.types.Menu):
-    bl_idname = "external_text_edit.presets"
+    bl_idname = "TEXT_MT_external_edit_presets"
     bl_label = "Presets"
 
     def draw(self, context):
