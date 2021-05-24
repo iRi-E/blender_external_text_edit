@@ -26,7 +26,7 @@ from collections import OrderedDict
 bl_info = {
     "name": "External Text Edit",
     "author": "IRIE Shinsuke",
-    "version": (2, 0, 2),
+    "version": (3, 0, 0),
     "blender": (2, 80, 0),
     "location": "Text Editor > Text > External Text Edit",
     "description": "Edit text with external text editor and reload automatically",
