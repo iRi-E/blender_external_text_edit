@@ -255,7 +255,10 @@ class ExternalEditorManager():
             self.text.clear()
             self.text.write(f.read())
 
-        self.text.current_line_index = line
+        if hasattr(self.text, "cursor_set"):
+            self.text.cursor_set(line)           # 2.81 or later
+        else:
+            self.text.current_line_index = line  # 2.80
         self.mtime = os.path.getmtime(self.filename)
 
 
