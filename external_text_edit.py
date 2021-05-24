@@ -27,7 +27,7 @@ bl_info = {
     "name": "External Text Edit",
     "author": "IRIE Shinsuke",
     "version": (2, 0, 2),
-    "blender": (2, 80, 0),  # or (2, 79, 0)
+    "blender": (2, 80, 0),
     "location": "Text Editor > Text > External Text Edit",
     "description": "Edit text with external text editor and reload automatically",
     "tracker_url": "https://github.com/iRi-E/blender_external_text_edit/issues",
@@ -58,7 +58,7 @@ PRESETS_DICT = OrderedDict((
 
 
 def userPrefs(context):
-    return context.preferences if hasattr(context, "preferences") else context.user_preferences
+    return context.preferences.addons[__name__].preferences
 
 
 class ExternalTextEditPrefs(bpy.types.AddonPreferences):
@@ -66,35 +66,35 @@ class ExternalTextEditPrefs(bpy.types.AddonPreferences):
     # when defining this in a submodule of a python package.
     bl_idname = __name__
 
-    interval = bpy.props.FloatProperty(
+    interval: bpy.props.FloatProperty(
         name="Interval",
         description="Time interval to watch if the file has been changed on disk (in seconds)",
         min=0.1,
         max=10.0,
         default=1.0)
 
-    launch = bpy.props.BoolProperty(
+    launch: bpy.props.BoolProperty(
         name="Launch External Editor",
         description="Automatically launch external editor when starting automatic reload",
         default=True)
 
-    command = bpy.props.StringProperty(
+    command: bpy.props.StringProperty(
         subtype="FILE_PATH",
         name="Command",
         description="Command name of an external text editor or file path to the executable file",
         default="emacs")
 
-    arguments = bpy.props.StringProperty(
+    arguments: bpy.props.StringProperty(
         name="Arguments",
         description="Command line options to give to the external text editor",
         default="")
 
-    wait = bpy.props.BoolProperty(
+    wait: bpy.props.BoolProperty(
         name="Wait for Return",
         description="Wait for the external command to be terminated and then stop the automatic reload",
         default=True)
 
-    server = bpy.props.StringProperty(options={'SKIP_SAVE'})  # used only for presets
+    server: bpy.props.StringProperty(options={'SKIP_SAVE'})  # used only for presets
 
     def draw(self, context):
         layout = self.layout
@@ -125,7 +125,7 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
     bl_idname = "text.external_edit_execute_preset"
     bl_label = "Execute a Preset of Edit Text External"
 
-    preset = bpy.props.StringProperty(options={'SKIP_SAVE'})
+    preset: bpy.props.StringProperty(options={'SKIP_SAVE'})
 
     def execute(self, context):
         def defaults(command, arguments="", wait=True, server=""):
@@ -134,7 +134,7 @@ class TEXT_OT_external_edit_execute_preset(bpy.types.Operator):
         preset_class = getattr(bpy.types, "TEXT_MT_external_edit_presets")
         preset_class.bl_label = self.preset
 
-        prefs = userPrefs(context).addons[__name__].preferences
+        prefs = userPrefs(context)
         prefs.command, prefs.arguments, prefs.wait, prefs.server = defaults(*PRESETS_DICT[self.preset])
 
         return {'FINISHED'}
@@ -292,7 +292,7 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
     def invoke(self, context, event):
         self.text = context.edit_text
         self.subproc_running = False
-        prefs = userPrefs(context).addons[__name__].preferences
+        prefs = userPrefs(context)
 
         if not (self.text.filepath or prefs.launch):
             err = "You need to turn on \"Launch External Editor\" in User Preferences to edit internal texts"
@@ -333,7 +333,7 @@ class TEXT_OT_external_edit_start(bpy.types.Operator):
             stop_editing()
             return {'CANCELLED'}
 
-        prefs = userPrefs(context).addons[__name__].preferences
+        prefs = userPrefs(context)
 
         if self.subproc_running and not self.editor.is_alive():
             print("external text editor was terminated")
@@ -390,7 +390,7 @@ class TEXT_OT_external_edit(bpy.types.Operator):
     bl_idname = "text.external_edit"
     bl_label = "Edit Text with External Editor"
 
-    action = bpy.props.EnumProperty(
+    action: bpy.props.EnumProperty(
         items=[('START', "Start", "Start external edit"),
                ('STOP',  "Stop",  "Stop external edit"),
                ('TOGGLE', "Toggle", "Toggle external edit")],
@@ -421,7 +421,7 @@ class TEXT_OT_external_edit_start_all(bpy.types.Operator):
         return False
 
     def execute(self, context):
-        prefs = userPrefs(context).addons[__name__].preferences
+        prefs = userPrefs(context)
 
         c = context.copy()
         for text in bpy.data.texts:
