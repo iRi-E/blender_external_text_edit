@@ -53,6 +53,7 @@ PRESETS_DICT = OrderedDict((
     ("GVim",          ["gvim", "--remote", False, True]),
     ("MonoDevelop",   ["monodevelop", "",  False, True]),
     ("PyCharm",       ["charm", "",        False, True]),
+    ("VimR",          ["vimr", "--remote", False, True]),
     # ("NetBeans",      ["netbeans", "",     False, True]), # untested
 ))
 
